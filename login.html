@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · ES Trainers ConTroller</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0b0f17">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/logo/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/logo/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/global.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/login.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<a class="skip-link" href="#login-main">Skip to sign in</a>
+<div class="login">
+  <section class="login__brand" aria-label="ES Trainers ConTroller">
+    <div class="brand-lockup">
+      <img src="assets/logo/favicon-192.png" alt="ES Trainers logo" width="52" height="52">
+      <div><strong>ES Trainers</strong><span>ConTroller</span></div>
+    </div>
+    <div>
+      <p class="login__headline">One Platform. Complete Tournament Control.</p>
+      <p class="login__sub">The administration area for ES Trainers tournaments. Authorised administrators only.</p>
+    </div>
+    <p class="login__foot">Access is granted by an Owner. Signing in alone does not give access.</p>
+  </section>
+
+  <main class="login__panel" id="login-main" tabindex="-1">
+    <div class="login__card">
+
+      <!-- Checking -->
+      <section class="panel panel__center" id="state-loading" aria-live="polite">
+        <span class="spinner boot-spin" aria-hidden="true"></span>
+        <h1 id="loading-title">Loading</h1>
+        <p class="panel__lead" id="loading-text">One moment.</p>
+      </section>
+
+      <!-- Sign in -->
+      <section class="panel" id="state-signin" hidden>
+        <h1>Sign in</h1>
+        <p class="panel__lead">Use the account an Owner gave access to.</p>
+        <div class="panel__body">
+          <button class="btn btn-google btn--block" id="btn-google" type="button"><span id="google-icon"></span><span>Continue with Google</span></button>
+          <div class="divider"><span>or use email</span></div>
+          <form id="form-email" novalidate>
+            <div class="field">
+              <label class="label" for="email">Email</label>
+              <input class="input" id="email" name="email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required>
+            </div>
+            <div class="field">
+              <label class="label" for="password">Password</label>
+              <div class="input-wrap">
+                <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
+                <button class="toggle" id="toggle-pw" type="button" aria-label="Show password" aria-pressed="false"></button>
+              </div>
+            </div>
+            <div class="row-between" style="margin-top:var(--space-3)">
+              <label class="check"><input type="checkbox" id="remember" checked> Keep me signed in on this device</label>
+              <button class="link-btn" id="link-forgot" type="button">Forgot password?</button>
+            </div>
+            <div class="alert alert--error form-error" id="signin-error" role="alert" hidden style="margin-top:var(--space-3)"></div>
+            <button class="btn btn--primary btn--block" id="btn-email" type="submit" style="margin-top:var(--space-4)">Sign in</button>
+          </form>
+          <p class="hint">There is no public sign-up. New administrators are added by an Owner.</p>
+        </div>
+      </section>
+
+      <!-- Reset password -->
+      <section class="panel" id="state-reset" hidden>
+        <h1>Reset password</h1>
+        <p class="panel__lead">We will email a reset link if the account has a password.</p>
+        <form class="panel__body" id="form-reset" novalidate>
+          <div class="field">
+            <label class="label" for="reset-email">Email</label>
+            <input class="input" id="reset-email" type="email" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" required>
+          </div>
+          <div class="alert form-error" id="reset-msg" role="status" hidden></div>
+          <button class="btn btn--primary btn--block" id="btn-reset" type="submit">Send reset link</button>
+          <button class="btn btn--outline btn--block" id="btn-reset-back" type="button">Back to sign in</button>
+        </form>
+      </section>
+
+      <!-- Denied / cannot verify -->
+      <section class="panel panel__center" id="state-denied" hidden>
+        <div class="denied-icon" id="denied-icon"></div>
+        <h1 id="denied-title">This account is not authorised</h1>
+        <p class="panel__lead" id="denied-text"></p>
+        <dl class="acct" id="acct"></dl>
+        <div class="alert alert--ok" id="denied-msg" role="status" hidden style="width:100%;text-align:left"></div>
+        <div class="btn-stack">
+          <button class="btn btn--soft" id="btn-verify" type="button" hidden>Send verification email</button>
+          <button class="btn btn--primary" id="btn-retry" type="button">Check again</button>
+          <button class="btn btn--outline" id="btn-signout" type="button">Sign out</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+<script type="module" src="js/login.js"></script>
+</body>
+</html>

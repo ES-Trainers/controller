@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · ES Trainers ConTroller</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0b0f17">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/logo/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/logo/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/global.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<a class="skip-link" href="#view">Skip to content</a>
+
+<!-- Shown until the access check passes. The page holds no data of its own. -->
+<div class="boot" id="boot" role="status">
+  <img src="assets/logo/favicon-192.png" alt="" width="64" height="64">
+  <span class="spinner" aria-hidden="true"></span>
+  <p>Checking your access</p>
+</div>
+
+<div class="shell" id="shell" hidden>
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="sidebar__brand">
+      <img src="assets/logo/favicon-192.png" alt="ES Trainers logo" width="40" height="40">
+      <div><strong>ES Trainers</strong><span>ConTroller</span></div>
+      <button class="sidebar__close" id="close-btn" type="button" aria-label="Close menu"><span id="close-icon"></span></button>
+    </div>
+    <nav class="nav" id="nav" aria-label="Sections"></nav>
+    <div class="sidebar__user">
+      <div class="who">
+        <div class="avatar" id="user-avatar" aria-hidden="true"></div>
+        <div class="who__text"><div class="who__name" id="user-name"></div><div class="who__mail" id="user-mail"></div></div>
+      </div>
+      <span class="badge badge--role badge--plain" id="user-role" style="justify-self:start"></span>
+      <button class="btn-signout" id="btn-signout" type="button"><span id="signout-icon"></span>Sign out</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <div class="main-col">
+    <header class="topbar">
+      <button class="topbar__menu" id="menu-btn" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span id="menu-icon"></span></button>
+      <span class="topbar__title" id="topbar-title">Dashboard</span>
+      <span class="topbar__spacer"></span>
+      <span class="badge badge--upcoming badge--plain">Read-only</span>
+    </header>
+    <main class="view" id="view" tabindex="-1"></main>
+  </div>
+</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
