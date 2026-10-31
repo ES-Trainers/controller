@@ -1,0 +1,130 @@
+/* ==========================================================
+   ES TRAINERS ConTroller — global.css
+   Design tokens copied from the public site (index.css) so the
+   Controller reads as part of the same product. Names and values
+   of the shared tokens are identical. Five status colours are new
+   (--danger, --warning and their washes, --success-wash) because
+   the public palette has none.
+   ========================================================== */
+
+:root {
+  /* Colour (shared with public site) */
+  --white: #ffffff;
+  --surface: #f5f7fb;
+  --surface-alt: #eceff5;
+  --ink: #0b0f17;
+  --ink-soft: #565e6d;
+  --ink-faint: #8891a0;
+  --line: #e1e5ed;
+
+  --blue: #1652f0;
+  --blue-deep: #09267a;
+  --blue-bright: #5a8dff;
+  --blue-wash: #eaf0ff;
+
+  --bgmi: #1f6e5c;
+  --bgmi-deep: #0c2b24;
+
+  --success: #1f8a4c;
+
+  /* Controller-only status colours */
+  --danger: #b42318;
+  --danger-wash: #fef3f2;
+  --warning: #b54708;
+  --warning-wash: #fffaeb;
+  --success-wash: #e8f5ee;
+
+  /* Type */
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Spacing scale (same as public site) */
+  --space-1: 0.4rem;
+  --space-2: 0.8rem;
+  --space-3: 1.2rem;
+  --space-4: 1.6rem;
+  --space-5: 2.4rem;
+  --space-6: 3.2rem;
+  --space-7: 4.8rem;
+  --space-8: 6.4rem;
+
+  /* Radius / shadow / motion */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgba(11, 15, 23, 0.06), 0 1px 1px rgba(11, 15, 23, 0.04);
+  --shadow-md: 0 8px 24px rgba(11, 15, 23, 0.08);
+  --shadow-lg: 0 20px 48px rgba(11, 15, 23, 0.14);
+  --shadow-blue: 0 12px 32px rgba(22, 82, 240, 0.22);
+  --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Layout */
+  --sidebar-w: 264px;
+  --topbar-h: 64px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+  font-size: 16px;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+h1 { font-size: 1.75rem; font-weight: 700; }
+h2 { font-size: 1.2rem; font-weight: 600; }
+h3 { font-size: 1.02rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+img, svg { display: block; max-width: 100%; }
+[hidden] { display: none !important; }
+
+:focus-visible {
+  outline: 3px solid var(--blue-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Headings and the main region receive focus from code on page change; they are not controls. */
+h1[tabindex="-1"]:focus, main[tabindex="-1"]:focus { outline: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: fixed; left: 12px; top: -80px; z-index: 1000;
+  background: var(--ink); color: var(--white); padding: 10px 16px;
+  border-radius: var(--radius-sm); font-weight: 600;
+}
+.skip-link:focus { top: 12px; text-decoration: none; }
+
+.muted { color: var(--ink-soft); }
+.faint { color: var(--ink-faint); }
+.num { font-variant-numeric: tabular-nums; }
+.break { overflow-wrap: anywhere; }
+
+.icon { width: 1.25em; height: 1.25em; flex: none; }
+.icon--sm { width: 1em; height: 1em; }
+.icon--lg { width: 1.6em; height: 1.6em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

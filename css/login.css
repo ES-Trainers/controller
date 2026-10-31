@@ -1,0 +1,51 @@
+/* ==========================================================
+   login.css — sign-in, reset, access-denied and loading states
+   ========================================================== */
+.login { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(340px, 5fr) 6fr; background: var(--white); }
+
+.login__brand {
+  position: relative; overflow: hidden;
+  background: var(--ink); color: var(--white);
+  padding: var(--space-7) var(--space-7); display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-6);
+}
+.login__brand::before {            /* one quiet blue shape, the only decoration */
+  content: ""; position: absolute; width: 520px; height: 520px; right: -200px; bottom: -220px;
+  border-radius: 50%; background: var(--blue-deep); opacity: 0.55;
+}
+.login__brand > * { position: relative; }
+.brand-lockup { display: flex; align-items: center; gap: var(--space-3); }
+.brand-lockup img { width: 52px; height: 52px; border-radius: 50%; background: var(--white); }
+.brand-lockup strong { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.01em; display: block; line-height: 1.1; }
+.brand-lockup span { font-size: 0.85rem; color: var(--blue-bright); font-weight: 600; }
+.login__headline { font-family: var(--font-display); font-weight: 700; font-size: clamp(2rem, 3.2vw, 3rem); line-height: 1.08; letter-spacing: -0.02em; max-width: 14ch; color: var(--white); }
+.login__sub { margin-top: var(--space-3); color: rgba(255, 255, 255, 0.7); max-width: 38ch; }
+.login__foot { font-size: 0.85rem; color: rgba(255, 255, 255, 0.55); }
+
+.login__panel { display: grid; place-items: center; padding: var(--space-6) var(--space-5); background: var(--surface); }
+.login__card { width: 100%; max-width: 440px; }
+.panel { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: var(--space-6) var(--space-5); }
+.panel h1 { font-size: 1.6rem; }
+.panel__lead { margin-top: var(--space-1); color: var(--ink-soft); }
+.panel__body { margin-top: var(--space-5); display: grid; gap: var(--space-4); }
+.panel__center { text-align: center; justify-items: center; }
+
+.btn-google { background: var(--white); border: 1.5px solid var(--line); color: var(--ink); }
+.btn-google:hover { border-color: var(--ink); }
+.btn-google svg { width: 20px; height: 20px; }
+
+.divider { display: flex; align-items: center; gap: var(--space-3); color: var(--ink-faint); font-size: 0.85rem; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+.row-between { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.form-error { min-height: 0; }
+
+.denied-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--warning-wash); color: var(--warning); }
+.denied-icon .icon { width: 28px; height: 28px; }
+.denied-icon--info { background: var(--blue-wash); color: var(--blue); }
+.acct { display: grid; gap: var(--space-2); text-align: left; width: 100%; padding: var(--space-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); }
+.acct div { display: grid; gap: 2px; }
+.acct dt { font-size: 0.78rem; color: var(--ink-soft); }
+.acct dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.btn-stack { display: grid; gap: var(--space-2); width: 100%; }
+
+.boot-spin { width: 36px; height: 36px; border-width: 3px; color: var(--blue); }
