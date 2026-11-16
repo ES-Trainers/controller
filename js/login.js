@@ -50,6 +50,7 @@ function renderDenied(user, code) {
     '<button class="btn btn--outline btn--sm btn--icon" id="btn-copy-uid" type="button" aria-label="Copy account ID">' + icon("copy", "icon--sm") + "</button></dd></div>";
   qs("#btn-copy-uid").addEventListener("click", () => copyText(user.uid, "Account ID copied"));
   qs("#btn-verify").hidden = code !== "unverified";
+  qs("#btn-accept").hidden = code !== "no_role"; // only someone with no access record can accept an invitation
   qs("#denied-msg").hidden = true;
   show("denied");
 }
@@ -110,4 +111,21 @@ qs("#btn-verify").addEventListener("click", (e) => withBusy(e.currentTarget, asy
   try { await sendVerification(); box.className = "alert alert--ok"; box.textContent = "Verification email sent. Open the link in it, then choose Check again."; }
   catch (ex) { box.className = "alert alert--error"; box.textContent = friendlyError(ex); }
   box.hidden = false;
+}));
+
+/* ---- Accept an administrator invitation ----
+   The server finds the invitation from this account's own VERIFIED email. Nothing typed here selects or changes it. */
+qs("#btn-accept").addEventListener("click", (e) => withBusy(e.currentTarget, async () => {
+  const box = qs("#denied-msg");
+  try {
+    const { callAdmin } = await import("./api.js");
+    await callAdmin("admin.acceptInvite", {});
+    box.className = "alert alert--ok"; box.textContent = "Invitation accepted. Opening the dashboard."; box.hidden = false;
+    const { currentUser } = await import("./auth.js");
+    const u = currentUser(); checking = false; if (u) await handleUser(u);
+  } catch (ex) {
+    box.className = "alert alert--error";
+    box.textContent = ex && ex.message ? ex.message : "Could not accept the invitation. Please try again.";
+    box.hidden = false;
+  }
 }));

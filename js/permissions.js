@@ -99,5 +99,6 @@ export function watchAccess(user, onResult) {
 export function can(access, key) {
   if (!access) return false;
   if (access.role === "owner") return PERMISSION_KEYS.includes(key);
+  if (key === "manageAdmins") return false; // reserved for the Owner, whatever a record says
   return access.permissions[key] === true;
 }

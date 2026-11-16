@@ -9,6 +9,7 @@ import { esc, qs, qsa, initials } from "./ui.js";
 const ROUTES = [
   { key: "dashboard", path: "dashboard", title: "Dashboard", icon: "dashboard", perm: null, load: () => import("./dashboard.js") },
   { key: "tournaments", path: "tournaments", title: "Tournaments", icon: "trophy", perm: "viewTournament", load: () => import("./tournaments.js") },
+  { key: "admins", path: "admins", title: "Admin Management", icon: "users", perm: "manageAdmins", load: () => import("./admins.js") },
   { key: "account", path: "account", title: "Account", icon: "user", perm: null, load: () => import("./account.js") }
 ];
 
