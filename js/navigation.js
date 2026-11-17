@@ -20,7 +20,9 @@ function parseHash() {
   const parts = (location.hash.replace(/^#\/?/, "") || "dashboard").split("/").filter(Boolean);
   let id = null;
   if (parts[1]) { try { id = decodeURIComponent(parts[1]); } catch (e) { id = null; } }
-  return { path: parts[0] || "dashboard", id };
+  let sub = null; // third segment, e.g. #/tournaments/<id>/edit
+  if (parts[2]) { try { sub = decodeURIComponent(parts[2]); } catch (e) { sub = null; } }
+  return { path: parts[0] || "dashboard", id, sub };
 }
 
 export function buildShell(access, user) {
@@ -76,7 +78,7 @@ function onResize() { if (window.innerWidth > DRAWER_MAX) setDrawer(false); }
 async function render() {
   const mine = ++seq;
   const view = qs("#view");
-  const { path, id } = parseHash();
+  const { path, id, sub } = parseHash();
   const route = ROUTES.find((r) => r.path === path);
   if (unmount) { try { unmount(); } catch (e) { /* ignore */ } unmount = null; }
 
@@ -90,7 +92,7 @@ async function render() {
   try {
     const mod = await route.load();
     if (mine !== seq) return; // a newer navigation won
-    unmount = mod.mount(view, { access: ctx.access, user: ctx.user, params: { id } }) || null;
+    unmount = mod.mount(view, { access: ctx.access, user: ctx.user, params: { id, sub } }) || null;
     const h = qs("#page-h1", view); if (h) h.focus({ preventScroll: true });
     window.scrollTo(0, 0);
   } catch (err) {

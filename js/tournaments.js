@@ -6,6 +6,9 @@ import { db, PUBLIC_SITE } from "./firebase-config.js";
 import { collection, query, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { parseStartMillis, evaluate, formatDateTimeIST, formatCountdown, REGISTRATION_OPEN_STATUS } from "./lifecycle.js";
 import { icon } from "./icons.js";
+import { can } from "./permissions.js";
+import { createActions, canManageAny, hideModeBadge, mountCreate, mountEdit } from "./tournament-admin.js";
+import { NEW_ID } from "./tournament-model.js";
 import { esc, qs, qsa, debounce, money, copyText, skeletonRows, emptyState, errorState } from "./ui.js";
 
 const LIMIT = 200; // same ceiling the public site uses
@@ -67,6 +70,7 @@ export function normalize(id, d) {
     prizePool: raw.prizePool,
     maxTeams: num(raw.maxTeams),
     registeredTeams: num(raw.registeredTeams),
+    registrationEnabled: raw.registrationEnabled === true ? true : raw.registrationEnabled === false ? false : null, // read-only; shown in the Manage panel
     rules: text(raw.rules),
     fieldNames: Object.keys(raw)
   };
@@ -139,12 +143,17 @@ export const TABLE_HEAD = "<thead><tr><th>Tournament</th><th>Status</th><th>Star
 /* ---------- Views ---------- */
 export function mount(container, ctx) {
   const id = ctx.params && ctx.params.id ? ctx.params.id : null;
-  return id ? mountDetail(container, id) : mountList(container);
+  const sub = ctx.params && ctx.params.sub ? ctx.params.sub : null;
+  if (id === NEW_ID) return mountCreate(container, ctx);        // Phase 2: create form (needs createTournament)
+  if (id && sub === "edit") return mountEdit(container, ctx, id); // Phase 2: edit form (needs editTournament)
+  return id ? mountDetail(container, id, ctx) : mountList(container, ctx);
 }
 
-function mountList(container) {
+function mountList(container, ctx) {
+  const restoreBadge = hideModeBadge(ctx.access);
+  const createBtn = can(ctx.access, "createTournament") ? '<a class="btn btn--primary" href="#/tournaments/' + NEW_ID + '">Create tournament</a>' : "";
   container.innerHTML =
-    '<div class="page-head"><div><h1 id="page-h1" tabindex="-1">Tournaments</h1><p>Live from the same data the public website uses. Read-only for now.</p></div></div>' +
+    '<div class="page-head"><div><h1 id="page-h1" tabindex="-1">Tournaments</h1><p>Live from the same data the public website uses.' + (canManageAny(ctx.access) ? "" : " Read-only for now.") + "</p></div>" + createBtn + "</div>" +
     '<div class="toolbar">' +
     '<div class="search"><label class="sr-only" for="t-search">Search tournaments</label>' + icon("search") + '<input class="input" id="t-search" type="search" placeholder="Search by name, ID or map" autocomplete="off"></div>' +
     '<div><label class="sr-only" for="t-status">Filter by status</label><select class="select" id="t-status"><option value="">All statuses</option><option value="registration_open">Registration open</option><option value="upcoming">Upcoming</option><option value="live">Live</option><option value="completed">Completed</option><option value="__other">Other or missing</option></select></div>' +
@@ -181,10 +190,12 @@ function mountList(container) {
   search.addEventListener("input", onInput);
   statusSel.addEventListener("change", render);
   sortSel.addEventListener("change", render);
-  return () => unsub();
+  return () => { unsub(); restoreBadge(); };
 }
 
-function mountDetail(container, id) {
+function mountDetail(container, id, ctx) {
+  const actions = createActions(ctx);
+  const restoreBadge = hideModeBadge(ctx.access);
   container.innerHTML = '<a class="crumb" href="#/tournaments">' + icon("back", "icon--sm") + 'All tournaments</a><div id="d-body">' + skeletonRows(3) + "</div>";
   const body = qs("#d-body", container);
   let timer = null, state = { items: null, error: null };
@@ -229,6 +240,7 @@ function mountDetail(container, id) {
       '<section class="card span-2"><div class="card__head"><h2 class="card__title">' + icon("list") + "Rules</h2></div>" +
       (t.rules.trim() ? '<div class="rules-box" tabindex="0" role="region" aria-label="Tournament rules">' + esc(t.rules) + "</div>" : '<p class="muted">No rules are published for this tournament.</p>') + "</section></div>";
 
+    actions.attach(body, t); // Phase 2: Manage panel (only what this account may do)
     qs("#d-copy", body).addEventListener("click", () => copyText(t.id, "Tournament ID copied"));
     if (ev.msToDeadline !== null && ev.msToDeadline > 0) {
       const el = qs("#d-count", body);
@@ -241,5 +253,5 @@ function mountDetail(container, id) {
   }
 
   const unsub = watchTournaments((s) => { state = s; render(); });
-  return () => { unsub(); if (timer) clearInterval(timer); };
+  return () => { unsub(); if (timer) clearInterval(timer); actions.dispose(); restoreBadge(); };
 }
