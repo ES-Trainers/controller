@@ -4,7 +4,7 @@
    The body is sent as text/plain so the browser makes a simple request (Apps Script web apps do not answer CORS preflights). */
 import { auth } from "./firebase-config.js";
 
-export const ADMIN_API_URL = "https://script.google.com/macros/s/AKfycbxeXk2wvKTSPeNou9dspTub704E5z8s3RhYdSvnUwA5wMR7EMyKT3O01xxfeYcLbeR4/exec";
+export const ADMIN_API_URL = "https://script.google.com/macros/s/AKfycby-jBcivTyuNTkdz-y9nH1SUmlFry6CiJTjD--uvpGWQed8LW-5Gd_4tnIV5d0YEXEx/exec";
 const TIMEOUT_MS = 30000;
 
 export class ApiError extends Error {
