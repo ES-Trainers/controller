@@ -13,7 +13,7 @@ export const PERMISSION_GROUPS = [
   { key: "registration", label: "Registrations", items: [
     { key: "viewRegistration", label: "View registrations", desc: "See teams and registration status." },
     { key: "viewSensitiveData", label: "View sensitive player data", desc: "See phone numbers, emails and player IDs unmasked." },
-    { key: "manageRegistration", label: "Manage registrations", desc: "Add notes and make allowed status changes." }
+    { key: "manageRegistration", label: "Manage registrations", desc: "Edit player details, add notes, remove and restore teams. Works only for Owner and Super Admin accounts." }
   ] },
   { key: "payments", label: "Payments", items: [
     { key: "viewPayments", label: "View payments", desc: "See payment records and status." },
@@ -46,7 +46,7 @@ export const ROLE_PRESETS = {
   super_admin: ALL_BUT_OWNER,
   tournament_admin: ["viewTournament", "createTournament", "editTournament", "publishTournament", "viewRegistration", "viewMatches", "manageMatches", "manageRoomCredentials"],
   finance_admin: ["viewTournament", "viewRegistration", "viewPayments", "exportPayments", "initiateRefund", "runReconciliation"],
-  support_admin: ["viewTournament", "viewRegistration", "viewSensitiveData", "manageRegistration", "viewMatches", "sendEmails"],
+  support_admin: ["viewTournament", "viewRegistration", "viewSensitiveData", "viewMatches", "sendEmails"], // no manageRegistration: team editing is Owner / Super Admin only
   viewer: ["viewTournament", "viewRegistration", "viewMatches"]
 };
 

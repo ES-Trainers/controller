@@ -5,6 +5,7 @@ import { currentUser, providersOf, providerLabel, linkPassword, linkGoogle, send
 import { PERMISSION_KEYS, can } from "./permissions.js";
 import { icon } from "./icons.js";
 import { esc, qs, copyText, toast, withBusy } from "./ui.js";
+import { canWriteAnything, canManageTeams } from "./permissions.js";
 
 const MIN_PW = 10;
 
@@ -40,9 +41,14 @@ export function mount(container, ctx) {
       "</section>" +
 
       '<section class="card span-2"><div class="card__head"><h2 class="card__title">' + icon("shield") + "Permissions on this account</h2></div>" +
-      '<p class="muted" style="margin-bottom:var(--space-3)">Read from your access record. Only an Owner can change it, in Firebase Console.</p>' +
+      '<p class="muted" style="margin-bottom:var(--space-3)">Read from your access record. Only the Owner can change it, in Admin Management.</p>' +
       '<div style="display:flex;flex-wrap:wrap;gap:var(--space-2)">' +
-      (granted.length ? granted.map((k) => '<span class="chip">' + esc(k) + "</span>").join("") : '<span class="muted">No permissions granted.</span>') + "</div></section></div>";
+      (granted.length ? granted.map((k) => '<span class="chip">' + esc(k) + "</span>").join("") : '<span class="muted">No permissions granted.</span>') + "</div>" +
+      '<p class="hint" style="margin-top:var(--space-3)">Can change things in the Controller: <strong>' + (canWriteAnything(ctx.access) ? "Yes" : "No (read-only)") + "</strong>. Can edit or remove registered teams: <strong>" + (canManageTeams(ctx.access) ? "Yes" : "No") + "</strong>. Team editing needs the Owner or Super Admin role and the manage registrations permission.</p></section>" +
+
+      '<section class="card span-2"><div class="card__head"><h2 class="card__title">' + icon("shield") + "Access check</h2></div>" +
+      '<p class="muted" style="margin-bottom:var(--space-3)">Compares what this browser believes with what the server verifies for your account. Read-only; nothing is changed.</p>' +
+      '<button class="btn btn--outline" id="a-check" type="button">Check with the server</button><div id="a-check-out" aria-live="polite" style="margin-top:var(--space-3)"></div></section></div>';
 
     qs("#a-copy", container).addEventListener("click", () => copyText(user.uid, "Account ID copied"));
     const g = qs("#a-g", container); if (g) g.innerHTML = icon("google");
@@ -63,9 +69,35 @@ export function mount(container, ctx) {
     if (rst) rst.addEventListener("click", () => withBusy(rst, async () => { try { await sendReset(user.email); toast("Reset link sent to " + user.email, "ok"); } catch (ex) { toast(friendlyError(ex), "error"); } }));
     const gb = qs("#a-google", container);
     if (gb) gb.addEventListener("click", () => withBusy(gb, async () => { try { await linkGoogle(); toast("Google sign-in added.", "ok"); render(); } catch (ex) { const m = friendlyError(ex); if (m) toast(m, "error"); } }));
+    const chk = qs("#a-check", container);
+    if (chk) chk.addEventListener("click", () => withBusy(chk, () => runAccessCheck(container, ctx)));
     const vb = qs("#a-verify", container);
     if (vb) vb.addEventListener("click", () => withBusy(vb, async () => { try { await sendVerification(); toast("Verification email sent.", "ok"); } catch (ex) { toast(friendlyError(ex), "error"); } }));
   }
   render();
   return () => {};
+}
+
+/* Access check: the browser's evaluation of the access record vs the server's own verdict (admin.ping). Read-only. */
+async function runAccessCheck(container, ctx) {
+  const out = qs("#a-check-out", container);
+  try {
+    const { callAdmin } = await import("./api.js");
+    const r = await callAdmin("admin.ping");
+    const rows = PERMISSION_KEYS.map((k) => {
+      const browser = can(ctx.access, k), server = r.permissions && r.permissions[k] === true;
+      const same = browser === server || (k === "manageAdmins" && ctx.access.role !== "owner" && !browser); // the browser never shows manageAdmins to a non-owner
+      return { k, browser, server, same };
+    });
+    const bad = rows.filter((x) => !x.same), roleOk = r.account && r.account.role === ctx.access.role, emailOk = r.account && String(r.account.email).toLowerCase() === String(ctx.user.email || "").toLowerCase();
+    const hasP3 = Array.isArray(r.actions) && r.actions.includes("admin.listRegistrations");
+    out.innerHTML = '<div class="alert alert--' + (!bad.length && roleOk && emailOk ? "ok" : "warn") + '">' + icon(!bad.length && roleOk && emailOk ? "check" : "alert", "icon--sm") + "<span>" +
+      (!bad.length && roleOk && emailOk ? "Browser and server agree on your role and all 19 permissions." : "Mismatch found: " + (bad.length ? bad.length + " permission(s) differ. " : "") + (roleOk ? "" : "Role differs. ") + (emailOk ? "" : "Email differs. ") + "Sign out and in, or ask the Owner to check your access record.") + "</span></div>" +
+      '<dl class="kv" style="margin-top:var(--space-3)"><div><dt>Server role</dt><dd>' + esc(r.account && r.account.role) + "</dd></div><div><dt>Backend version</dt><dd>" + esc(r.version) + "</dd></div>" +
+      "<div><dt>Team registrations on the server</dt><dd>" + (hasP3 ? "Available" : "Not deployed yet") + "</dd></div></dl>" +
+      '<div class="table-wrap" style="margin-top:var(--space-3)"><table class="table"><thead><tr><th>Permission</th><th>Browser</th><th>Server</th><th></th></tr></thead><tbody>' +
+      rows.map((x) => "<tr><td><code>" + esc(x.k) + '</code></td><td data-label="Browser">' + (x.browser ? "On" : "Off") + '</td><td data-label="Server">' + (x.server ? "On" : "Off") + '</td><td data-label="">' + (x.same ? "" : '<span class="badge badge--warn">Differs</span>') + "</td></tr>").join("") + "</tbody></table></div>";
+  } catch (ex) {
+    out.innerHTML = '<div class="alert alert--error">' + icon("alert", "icon--sm") + "<span>" + esc(ex && ex.message ? ex.message : "The check could not run.") + "</span></div>";
+  }
 }

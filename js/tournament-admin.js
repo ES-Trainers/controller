@@ -3,22 +3,14 @@
    Every change goes through Apps Script, which re-checks identity, the live access record and the exact permission. Buttons are hidden
    without permission as a convenience only. Nothing here writes to Firestore, and registeredTeams is never sent. */
 import { callAdmin, ApiError } from "./api.js";
-import { can } from "./permissions.js";
+import { can, canWriteAnything } from "./permissions.js";
 import { icon } from "./icons.js";
 import { esc, qs, qsa, toast, withBusy, skeletonRows, emptyState, errorState } from "./ui.js";
 import { formatDateTimeIST } from "./lifecycle.js";
 import { dialog } from "./dialog.js";
 import * as M from "./tournament-model.js";
 
-export function canManageAny(access) { return ["createTournament", "editTournament", "publishTournament", "deleteTournament"].some((k) => can(access, k)); }
-
-/** The topbar says "Read-only"; that is wrong for someone who can change tournaments. Returns a function that puts it back. */
-export function hideModeBadge(access) {
-  const b = canManageAny(access) ? qs(".topbar .badge") : null;
-  if (!b) return () => {};
-  b.style.display = "none";
-  return () => { b.style.display = ""; };
-}
+export function canManageAny(access) { return canWriteAnything(access); } // kept for compatibility; the topbar badge is now handled once, in navigation.js
 
 const errText = (err) => (err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
 const fieldNotes = (err) => (err instanceof ApiError && err.fields ? Object.keys(err.fields).map((k) => String(err.fields[k])).filter((v, i, a) => a.indexOf(v) === i) : []);
@@ -58,7 +50,8 @@ export function createActions(ctx) {
       '<div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center">' +
       (canEdit ? '<a class="btn btn--outline" href="#/tournaments/' + encodeURIComponent(t.id) + '/edit">' + icon("list", "icon--sm") + "Edit details</a>" : "") +
       acts.map((k) => '<button class="btn btn--' + (M.ACTIONS[k].kind === "primary" ? "primary" : "outline") + '" type="button" data-act="' + k + '">' + esc(M.ACTIONS[k].label) + "</button>").join("") +
-      (canDel ? '<button class="btn btn--danger" type="button" data-act="delete" style="margin-left:auto">Delete tournament</button>' : "") + "</div>" +
+      (canDel ? '<button class="btn btn--danger" type="button" data-act="delete" style="margin-left:auto">Delete empty tournament</button>' : "") + "</div>" +
+      '<p class="hint" style="margin-top:var(--space-2)"><strong>Completed</strong> archives a tournament and keeps every registration and payment record. <strong>Delete</strong> only works for an empty test tournament with no registrations or payment sessions.</p>' +
       (canPub ? "" : '<p class="hint" style="margin-top:var(--space-2)">Opening, closing and changing status needs the publish permission.</p>') +
       '<div id="d-msg" aria-live="polite"></div>';
     head.insertAdjacentElement("afterend", wrap);
@@ -91,22 +84,35 @@ export function createActions(ctx) {
       try { const r = await callAdmin("admin.updateTournament", { id, revision, changes: plan[i].changes }); revision = r.revision || revision; }
       catch (err) {
         if (!S.alive) return;
-        if (i > 0) { setMsg("error", "Registration is already closed (the status is Upcoming), but the registration switch could not be turned off: " + msgOf(err) + " Use \u201CTurn registration switch off\u201D to finish."); return; }
+        if (i > 0) { setMsg("error", "The status was changed, so registration has already stopped, but the registration switch could not be turned off: " + msgOf(err) + " Use \u201CTurn registration switch off\u201D to finish."); return; }
         throw err;
       }
     }
     toast(d.title.replace("?", "") + " done.", "ok");
-    setMsg("ok", "Done. " + (key === "close" ? "Registration is closed and the switch is off." : "The page now shows the new state."));
+    setMsg("ok", "Done. " + (plan.length > 1 ? "The status was changed and the registration switch is off." : "The page now shows the new state."));
   }
 
   async function doDelete() {
-    const t = S.t, hints = M.deleteHints(t);
-    const ok = await dialog(S, { title: "Delete this tournament?", confirmLabel: "Delete permanently", danger: true, requireText: t.id, requireLabel: "Type the tournament ID to confirm",
-      bodyHtml: "<p><strong>" + esc(t.title || t.id) + "</strong> will be removed permanently. This cannot be undone.</p>" +
-        "<p>The server only allows it when the tournament is Upcoming or Completed, its registration switch is off, it has had no change for about an hour, it has no registered teams and it holds no stored data. Otherwise it refuses and tells you why.</p>" +
-        (hints.length ? '<div class="alert alert--warn">' + icon("alert", "icon--sm") + "<span>" + hints.map(esc).join(" ") + "</span></div>" : "") });
+    const t = S.t;
+    const c = await callAdmin("admin.checkTournamentDeletion", { id: t.id });   // read-only: every blocker, with the exact time when it ends
+    if (!S.alive) return;
+    if (!c.eligible) {
+      const when = c.eligibleAt ? formatDateTimeIST(Date.parse(c.eligibleAt)) : "";
+      const kinds = c.blockers.map((b) => b.kind);
+      const advice = c.permanent ? "This tournament holds registrations or payment history, so it is kept. Mark it Completed (the archive state) instead; nothing is lost."
+        : kinds.every((k) => k === "time") ? "Nothing else is blocking it. It becomes deletable at the time shown, provided it is not changed again before then."
+        : "Fix the items marked below first. Each change restarts the one-hour quiet period.";
+      await dialog(S, { title: "This tournament cannot be deleted yet", infoOnly: true, cancelLabel: "Close",
+        bodyHtml: "<p><strong>" + esc(c.title || t.id) + "</strong> is " + badge(c.status) + ", registration switch " + esc(switchText(c.registrationEnabled)) + ", " + esc(c.registeredTeams) + " registered team(s).</p>" +
+          '<ul class="dlg__list">' + c.blockers.map((b) => "<li>" + esc(b.message) + "</li>").join("") + "</ul>" +
+          (when ? '<div class="alert alert--warn">' + icon("alert", "icon--sm") + "<span>Earliest possible deletion: <strong>" + esc(when) + "</strong> (if nothing changes before then).</span></div>" : "") +
+          "<p>" + esc(advice) + "</p>" });
+      return;
+    }
+    const ok = await dialog(S, { title: "Delete this empty tournament?", confirmLabel: "Delete permanently", danger: true, requireText: t.id, requireLabel: "Type the tournament ID to confirm",
+      bodyHtml: "<p><strong>" + esc(c.title || t.id) + "</strong> passed every check: it is " + badge(c.status) + ", registration is off, it has no registered teams, no stored data and has been quiet for over an hour.</p><p>It will be removed permanently. This cannot be undone.</p>" });
     if (!ok || !S.alive) return;
-    await callAdmin("admin.deleteTournament", { id: t.id, confirmId: t.id });
+    await callAdmin("admin.deleteTournament", { id: t.id, confirmId: t.id });     // the server checks everything again before deleting
     if (!S.alive) return;
     toast("Tournament deleted.", "ok");
     window.location.hash = "#/tournaments";
@@ -119,7 +125,7 @@ export function createActions(ctx) {
 /* =====================================================================================================
    Create / edit form
    ===================================================================================================== */
-function installGuard(S) {
+export function installGuard(S) {
   const guard = (e) => {
     if (!S.dirty) return;
     const a = e.target.closest && e.target.closest('a[href^="#/"]'); if (!a) return;
@@ -170,8 +176,8 @@ const fmtStart = (iso) => { const ms = M.isoToMs(iso); return ms === null ? "Not
 /* ---------- Create ---------- */
 export function mountCreate(container, ctx) {
   const S = { alive: true, dirty: false, closeDialog: null };
-  const restoreBadge = hideModeBadge(ctx.access), removeGuard = installGuard(S);
-  const cleanup = () => { S.alive = false; S.dirty = false; if (S.closeDialog) S.closeDialog(); removeGuard(); restoreBadge(); container.innerHTML = ""; };
+  const removeGuard = installGuard(S);
+  const cleanup = () => { S.alive = false; S.dirty = false; if (S.closeDialog) S.closeDialog(); removeGuard(); container.innerHTML = ""; };
   if (!can(ctx.access, "createTournament")) { container.innerHTML = notice("No access to this section", "Your account does not have permission to create tournaments.", "lock"); return cleanup; }
 
   container.innerHTML = '<a class="crumb" href="#/tournaments">' + icon("back", "icon--sm") + 'All tournaments</a>' +
@@ -210,8 +216,8 @@ export function mountCreate(container, ctx) {
 /* ---------- Edit ---------- */
 export function mountEdit(container, ctx, id) {
   const S = { alive: true, dirty: false, closeDialog: null };
-  const restoreBadge = hideModeBadge(ctx.access), removeGuard = installGuard(S);
-  const cleanup = () => { S.alive = false; S.dirty = false; if (S.closeDialog) S.closeDialog(); removeGuard(); restoreBadge(); container.innerHTML = ""; };
+  const removeGuard = installGuard(S);
+  const cleanup = () => { S.alive = false; S.dirty = false; if (S.closeDialog) S.closeDialog(); removeGuard(); container.innerHTML = ""; };
   const back = '<a class="crumb" href="#/tournaments/' + encodeURIComponent(id) + '">' + icon("back", "icon--sm") + "Back to the tournament</a>";
   if (!can(ctx.access, "editTournament")) { container.innerHTML = notice("No access to this section", "Your account does not have permission to edit tournaments.", "lock"); return cleanup; }
   if (!M.isAdminId(id)) { container.innerHTML = notice("This tournament cannot be edited here", "Its ID uses a format the Controller cannot manage. Edit it in Firebase Console.", "info"); return cleanup; }

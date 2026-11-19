@@ -5,6 +5,7 @@
 import { watchTournaments, retryTournaments, dataChecks, rowHtml, TABLE_HEAD } from "./tournaments.js";
 import { evaluate, formatDateTimeIST, formatCountdown } from "./lifecycle.js";
 import { icon } from "./icons.js";
+import { canWriteAnything } from "./permissions.js";
 import { esc, qs, skeletonCards, skeletonRows, emptyState, errorState } from "./ui.js";
 
 function greeting(now) {
@@ -16,7 +17,7 @@ export function mount(container, ctx) {
   const first = String(ctx.access.name || "").split(" ")[0] || "there";
   container.innerHTML =
     '<div class="page-head"><div><h1 id="page-h1" tabindex="-1">' + esc(greeting(Date.now())) + ", " + esc(first) + "</h1>" +
-    "<p>Live overview of ES Trainers tournaments. Read-only for now.</p></div></div>" +
+    "<p>Live overview of ES Trainers tournaments." + (canWriteAnything(ctx.access) ? "" : " Read-only for now.") + "</p></div></div>" +
     '<div id="dash-body">' + skeletonCards(6) + skeletonRows(3) + "</div>";
 
   const body = qs("#dash-body", container);

@@ -116,7 +116,7 @@ export const ACTIONS = {
   open: { label: "Open registration", perm: "publishTournament", kind: "primary" },
   close: { label: "Close registration", perm: "publishTournament", kind: "outline" },
   live: { label: "Mark live", perm: "publishTournament", kind: "outline" },
-  complete: { label: "Mark completed", perm: "publishTournament", kind: "outline" },
+  complete: { label: "Mark completed (archive)", perm: "publishTournament", kind: "outline" },
   switchOff: { label: "Turn registration switch off", perm: "publishTournament", kind: "outline" }
 };
 /** Which actions make sense for a tournament in this state. (The server accepts any status; the screen offers only these.) */
@@ -135,8 +135,11 @@ export function planStatusChange(key, cur) {
   const flag = cur.registrationEnabled === true;
   if (key === "open") return cur.status === "upcoming" ? [{ changes: assertSafeChanges(flag ? { status: "registration_open" } : { status: "registration_open", registrationEnabled: true }) }] : null;
   if (key === "close") return cur.status === "registration_open" ? [{ changes: { status: "upcoming" } }].concat(flag ? [{ changes: { registrationEnabled: false } }] : []) : null;
-  if (key === "live") return cur.status === "upcoming" || cur.status === "registration_open" ? [{ changes: { status: "live" } }] : null;
-  if (key === "complete") return cur.status === "live" ? [{ changes: { status: "completed" } }] : null;
+  // Live and Completed also switch registration OFF (a second call, like Close), so a finished tournament is not left "accepting" and a later
+  // delete does not stall on the registration switch. Step 1 already ends registration (only an open tournament accepts it).
+  const off = flag ? [{ changes: { registrationEnabled: false } }] : [];
+  if (key === "live") return cur.status === "upcoming" || cur.status === "registration_open" ? [{ changes: { status: "live" } }].concat(off) : null;
+  if (key === "complete") return cur.status === "live" ? [{ changes: { status: "completed" } }].concat(off) : null;
   if (key === "switchOff") return flag && cur.status !== "registration_open" && STATUS_LABELS[cur.status] ? [{ changes: { registrationEnabled: false } }] : null;
   return null;
 }
@@ -146,8 +149,8 @@ export function describeAction(key) {
   return {
     open: { title: "Open registration?", confirm: "Open registration", lines: ["Teams can register and pay as soon as you confirm. Registration closes automatically 48 hours before the start.", "This also turns the registration switch on.", keep] },
     close: { title: "Close registration?", confirm: "Close registration", danger: true, lines: ["Registration stops now: the status goes back to Upcoming and the registration switch is turned off.", "Someone who is in the middle of paying at this moment may be told registration has closed; the existing payment safeguards handle that case.", keep] },
-    live: { title: "Mark this tournament live?", confirm: "Mark live", lines: ["The status becomes Live, which also ends registration (only an open tournament accepts registrations).", keep] },
-    complete: { title: "Mark this tournament completed?", confirm: "Mark completed", lines: ["The status becomes Completed.", keep] },
+    live: { title: "Mark this tournament live?", confirm: "Mark live", lines: ["The status becomes Live, which ends registration, and the registration switch is turned off.", keep] },
+    complete: { title: "Mark this tournament completed?", confirm: "Mark completed", lines: ["The status becomes Completed and the registration switch is turned off. Completed is the archive state: every registration and payment record is kept.", "Only an empty tournament with no registrations or payment sessions can ever be deleted. Anything else stays here as Completed.", keep] },
     switchOff: { title: "Turn the registration switch off?", confirm: "Turn off", lines: ["The tournament is not open, so this changes nothing for players; it switches the registration safeguard off.", keep] }
   }[key];
 }

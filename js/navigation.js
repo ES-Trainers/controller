@@ -2,7 +2,7 @@
    Pages are loaded on demand (dynamic import) and each one returns an "unmount" function
    that removes its listeners and timers. Menu items are filtered by permission, but that is
    convenience only: Firestore Rules are the real gate. */
-import { can } from "./permissions.js";
+import { can, canWriteAnything } from "./permissions.js";
 import { icon } from "./icons.js";
 import { esc, qs, qsa, initials } from "./ui.js";
 
@@ -22,7 +22,9 @@ function parseHash() {
   if (parts[1]) { try { id = decodeURIComponent(parts[1]); } catch (e) { id = null; } }
   let sub = null; // third segment, e.g. #/tournaments/<id>/edit
   if (parts[2]) { try { sub = decodeURIComponent(parts[2]); } catch (e) { sub = null; } }
-  return { path: parts[0] || "dashboard", id, sub };
+  let arg = null; // fourth segment, e.g. #/tournaments/<id>/team/<registrationId>
+  if (parts[3]) { try { arg = decodeURIComponent(parts[3]); } catch (e) { arg = null; } }
+  return { path: parts[0] || "dashboard", id, sub, arg };
 }
 
 export function buildShell(access, user) {
@@ -78,9 +80,10 @@ function onResize() { if (window.innerWidth > DRAWER_MAX) setDrawer(false); }
 async function render() {
   const mine = ++seq;
   const view = qs("#view");
-  const { path, id, sub } = parseHash();
+  const { path, id, sub, arg } = parseHash();
   const route = ROUTES.find((r) => r.path === path);
   if (unmount) { try { unmount(); } catch (e) { /* ignore */ } unmount = null; }
+  applyModeBadge(ctx.access); // one rule for every page: "Read-only" is shown only to an account that can change nothing
 
   qsa("#nav a").forEach((a) => { if (route && a.dataset.route === route.key) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
 
@@ -92,7 +95,7 @@ async function render() {
   try {
     const mod = await route.load();
     if (mine !== seq) return; // a newer navigation won
-    unmount = mod.mount(view, { access: ctx.access, user: ctx.user, params: { id, sub } }) || null;
+    unmount = mod.mount(view, { access: ctx.access, user: ctx.user, params: { id, sub, arg } }) || null;
     const h = qs("#page-h1", view); if (h) h.focus({ preventScroll: true });
     window.scrollTo(0, 0);
   } catch (err) {
@@ -100,6 +103,12 @@ async function render() {
     console.error("Could not open page", err);
     view.innerHTML = notice("This page could not load", "Refresh the page. If it keeps happening, tell the developer.", "alert");
   }
+}
+
+/** The topbar "Read-only" badge reflects real permissions, not the role name. Runs after the previous page has cleaned up. */
+function applyModeBadge(access) {
+  const b = qs("#mode-badge"); if (!b) return;
+  b.style.display = canWriteAnything(access) ? "none" : "";
 }
 
 function setTitle(t) {

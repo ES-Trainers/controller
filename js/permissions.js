@@ -102,3 +102,16 @@ export function can(access, key) {
   if (key === "manageAdmins") return false; // reserved for the Owner, whatever a record says
   return access.permissions[key] === true;
 }
+
+/* ---- Phase 3 helpers. can() above is unchanged. ---- */
+/** Only these two roles may change team details; the stored manageRegistration permission is ALSO required (the Owner holds every permission).
+ *  The server enforces exactly the same rule; this only decides what to show. */
+export const TEAM_MANAGER_ROLES = ["owner", "super_admin"];
+export function isOwner(access) { return !!access && access.role === "owner"; }
+export function canManageTeams(access) { return !!access && TEAM_MANAGER_ROLES.includes(access.role) && can(access, "manageRegistration"); }
+/** Does this account hold at least one permission that can change something in the Controller today? Drives the "Read-only" badge. */
+export function canWriteAnything(access) {
+  if (!access) return false;
+  if (isOwner(access)) return true;
+  return ["createTournament", "editTournament", "publishTournament", "deleteTournament"].some((k) => can(access, k)) || canManageTeams(access);
+}
